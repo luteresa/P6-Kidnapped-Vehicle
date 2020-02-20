@@ -50,13 +50,13 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   normal_distribution<double> dist_y(y, std_y);
   normal_distribution<double> dist_theta(theta, std_theta);
   
-  num_particles = 100;  // TODO: Set the number of particles
+  num_particles = 60;  // TODO: Set the number of particles
   for (int i=0; i < num_particles; i++) {
 		Particle p;
 		double sample_x, sample_y, sample_theta;
 		sample_x = dist_x(gen);
-        sample_y = dist_y(gen);
-        sample_theta = dist_theta(gen);
+    sample_y = dist_y(gen);
+    sample_theta = dist_theta(gen);
 
 		p.id = i;
 		p.x = sample_x;
@@ -106,6 +106,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 	}
 }
 
+//匹配最近邻地标点
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
                                      vector<LandmarkObs>& observations) {
   /**
@@ -117,8 +118,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   during the updateWeights phase.
    */
 
-    int num_obs= observations.size();
-
+  int num_obs= observations.size();
 	int num_pred = predicted.size();
 
 	for (int i = 0; i < num_obs; i++) {
@@ -203,12 +203,14 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			}
 		}
 
-		// step1:坐标系转换，齐次变换
+		// step1:对所有检测点坐标系转换，齐次变换
 		// Transfrom observation coodinates from vehicle coordinate to map (global) coordinate.
 		vector<LandmarkObs> mappedObservations;
 		//Rotation
 		for (unsigned int j = 0; j< observations.size(); j++) {
 			double x_map,y_map;
+      //此处观测点，一个传感器对应一个序列值，对多个不同粒子，只是x_part,y_part不同
+      //因此，对多个粒子，只需要保持一个备份即可，在粒子太多时，作此优化可以节省时间
 			x_map = x_part + (cos(theta_) * observations[j].x) - (sin(theta_) * observations[j].y);
 			y_map = y_part + (sin(theta_) * observations[j].x) + (cos(theta_) * observations[j].y);
 			mappedObservations.push_back(LandmarkObs{ observations[j].id, x_map, y_map });
